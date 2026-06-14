@@ -47,7 +47,6 @@ Security logs are complex and cryptic. Beginner SOC analysts often spend hours t
 
 ### Prerequisites
 - Python 3.12 or higher — [download](https://www.python.org/downloads/)
-- An Anthropic API key — [get one here](https://console.anthropic.com/)
 
 ### Step 1 — Clone or Download
 ```
@@ -113,7 +112,7 @@ Click **"Try Sample Logs"** to immediately see a full demo with a simulated atta
 soc-copilot/
 │
 ├── app.py                  ← Flask web server, API endpoints
-├── analyzer.py             ← AI reasoning engine (Claude API + fallback)
+├── analyzer.py             ← AI reasoning engine 
 ├── mitre_mapping.py        ← MITRE ATT&CK technique lookup table
 ├── severity_engine.py      ← Severity scoring (0–100) with context analysis
 ├── report_generator.py     ← Security report and checklist generator
@@ -186,7 +185,7 @@ This mirrors real-world attack patterns mapped to the MITRE ATT&CK framework.
 
 ## 🖼️ Screenshots
 
-> *(Screenshots would be added here for the hackathon submission)*
+> 
 
 | Screen | Description |
 |---|---|
@@ -227,8 +226,8 @@ SOC Copilot demonstrates reasoning agents by:
 
 ## 📜 License
 
-MIT License — free to use, modify, and distribute for educational purposes.
+This project is intended for educational and demonstration purposes.
 
 ---
 
-*Built with Flask + Claude AI + Bootstrap 5 | For educational and demonstration purposes*
+*Built with Python, Flask, Bootstrap 5, and optional AI-assisted analysis support. Includes Splunk integration, MITRE ATT&CK mapping, and threat hunting capabilities.*
