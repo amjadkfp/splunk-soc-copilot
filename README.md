@@ -46,24 +46,40 @@ Security logs are complex and cryptic. Beginner SOC analysts often spend hours t
 ## 🚀 Installation & Running (Windows 11)
 
 ### Prerequisites
-- Python 3.12 or higher — [download](https://www.python.org/downloads/)
+- Python 3.10 or higher installed
+- Internet connection (optional, for AI-assisted analysis)
+- Git (optional, for cloning the repository)
 
 ### Step 1 — Clone or Download
 ```
-Download and extract the soc-copilot folder to your Desktop or any directory.
+Clone or download the repository and extract it to a folder of your choice.
+
+git clone https://github.com/YOUR_USERNAME/soc-copilot.git
+cd soc-copilot
+
+Or download the ZIP file and extract it.
 ```
 
 ### Step 2 — Open Terminal
 ```
 Press Win + R, type cmd, press Enter.
-cd path\to\soc-copilot
+cd path\to\splunk-soc-copilot
 ```
 Or right-click the folder in Explorer → "Open in Terminal"
 
 ### Step 3 — Create a Virtual Environment
 ```bash
 python -m venv venv
-venv\Scripts\activate
+
+Activate it:
+
+Command Prompt (CMD)
+
+venv\Scripts\activate.bat
+
+PowerShell
+
+.\venv\Scripts\Activate.ps1
 ```
 You should see `(venv)` appear in your terminal prompt.
 
@@ -71,40 +87,36 @@ You should see `(venv)` appear in your terminal prompt.
 ```bash
 pip install -r requirements.txt
 ```
+### Step 5 — Run SOC Copilot
+Option A: One-Click Launcher (Recommended)
 
-### Step 5 — Set Your API Key
+Double-click:
 
-**Windows (Command Prompt):**
-```cmd
-set ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
+start_soc_copilot.bat
 
-**Windows (PowerShell):**
-```powershell
-$env:ANTHROPIC_API_KEY = "sk-ant-your-key-here"
-```
-
-> **Note:** If you don't have an API key, the app still works! It uses a built-in rule-based fallback engine for all analysis. The fallback provides detailed, educational explanations — perfect for demos.
-
-### Step 6 — Run the App
-```bash
+Option B: Run from Terminal
 python app.py
-```
 
-You should see:
-```
-============================================================
-  SOC Copilot — AI Security Log Investigation Agent
-  Starting server at http://127.0.0.1:5000
-============================================================
-```
-
-### Step 7 — Open in Browser
+---
+### Step 6 — Open in Browser
 Navigate to: **http://127.0.0.1:5000**
 
 Click **"Try Sample Logs"** to immediately see a full demo with a simulated attack scenario.
 
 ---
+🤖 Optional AI-Assisted Analysis
+
+To enable AI-assisted analysis, configure your API key before starting the application.
+
+Command Prompt
+
+set ANTHROPIC_API_KEY=your-api-key
+
+PowerShell
+
+$env:ANTHROPIC_API_KEY="your-api-key"
+
+If no API key is configured, SOC Copilot will continue to operate using offline rule-based analysis.
 
 ## 📁 Project Structure
 
@@ -127,8 +139,7 @@ soc-copilot/
 │
 ├── sample_logs/
 │   └── windows_security_events.json  ← 12 sample events with a simulated attack chain
-│
-└── uploads/                ← Temporary file storage (auto-cleaned after analysis)
+
 ```
 
 ---
@@ -208,19 +219,6 @@ This mirrors real-world attack patterns mapped to the MITRE ATT&CK framework.
 - [ ] **User Accounts** — Save and compare historical investigations
 - [ ] **Sysmon Support** — Full Sysmon event ID parsing (Event ID 1, 3, 7, etc.)
 - [ ] **Network Log Analysis** — Extend to firewall and proxy logs
-
----
-
-## 🤝 Built For
-
-**Microsoft Agents League Hackathon — Reasoning Agents Track**
-
-SOC Copilot demonstrates reasoning agents by:
-- **Multi-step reasoning** over structured security data
-- **Context-aware analysis** that adjusts severity based on event relationships
-- **Decision support** that guides analysts through investigation steps
-- **Human-readable explanations** that bridge AI insights and analyst understanding
-- **Actionable outputs** — not just analysis, but specific steps to take next
 
 ---
 
