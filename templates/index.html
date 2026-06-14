@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOC Copilot — AI Security Log Investigator</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+
+  <style>
+    /* ── Design System ─────────────────────────────────────────────────────
+       Palette: deep navy terminal background, electric cyan accent,
+       amber alert, crimson critical. Monospaced data, sans-serif prose.
+       The signature: a live "heartbeat" status bar that pulses when
+       analysis is running — like an actual SOC monitoring screen.
+    ─────────────────────────────────────────────────────────────────────── */
+    :root {
+      --bg-deep:    #0a0e1a;
+      --bg-panel:   #0f1729;
+      --bg-card:    #141d35;
+      --bg-input:   #1a2540;
+      --border:     #1e2e50;
+      --cyan:       #00d4ff;
+      --cyan-dim:   #0099bb;
+      --amber:      #ffb347;
+      --green:      #00e676;
+      --red:        #ff3d57;
+      --purple:     #7c4dff;
+      --text-main:  #e2e8f0;
+      --text-muted: #7a8aaa;
+      --font-mono:  'Courier New', 'Consolas', monospace;
+      --font-sans:  'Segoe UI', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+    }
+
+    /* ── Top Nav ────────────────────────────────────────────────────────── */
+    .soc-nav {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .soc-logo {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.05em;
+    }
+    .soc-logo span { color: var(--text-muted); font-weight: 400; }
+    .status-dot {
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,230,118,.4); }
+      50% { opacity: .7; box-shadow: 0 0 0 5px rgba(0,230,118,0); }
+    }
+    .status-dot.analyzing {
+      background: var(--amber);
+      animation: pulse-amber 0.8s infinite;
+    }
+    @keyframes pulse-amber {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,179,71,.6); }
+      50% { box-shadow: 0 0 0 6px rgba(255,179,71,0); }
+    }
+    .nav-status { font-size: .75rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+    /* ── Layout ─────────────────────────────────────────────────────────── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 57px);
+    }
+    .sidebar {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1.25rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 57px);
+      position: sticky;
+      top: 57px;
+    }
+    .content-area {
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────────────── */
+    .soc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .soc-card-header {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--cyan);
+      margin-bottom: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    /* ── Upload Zone ────────────────────────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--cyan);
+      background: rgba(0,212,255,.04);
+    }
+    .upload-zone .upload-icon {
+      font-size: 2rem;
+      color: var(--cyan-dim);
+      margin-bottom: .5rem;
+    }
+    .upload-zone p { color: var(--text-muted); font-size: .85rem; margin: 0; }
+    .upload-zone strong { color: var(--text-main); }
+
+    /* ── Buttons ────────────────────────────────────────────────────────── */
+    .btn-soc {
+      background: transparent;
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      padding: .5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .btn-soc:hover { background: var(--cyan); color: var(--bg-deep); }
+    .btn-soc:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-soc.btn-amber { border-color: var(--amber); color: var(--amber); }
+    .btn-soc.btn-amber:hover { background: var(--amber); color: var(--bg-deep); }
+    .btn-soc.btn-green { border-color: var(--green); color: var(--green); }
+    .btn-soc.btn-green:hover { background: var(--green); color: var(--bg-deep); }
+    .btn-soc.btn-sm { font-size: .72rem; padding: .3rem .65rem; }
+
+    /* ── Severity Badges ────────────────────────────────────────────────── */
+    .badge-sev {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      padding: .25em .6em;
+      border-radius: 3px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .sev-critical  { background: rgba(255,61,87,.2);  color: #ff3d57; border: 1px solid #ff3d57; }
+    .sev-high      { background: rgba(255,100,60,.2); color: #ff643c; border: 1px solid #ff643c; }
+    .sev-medium    { background: rgba(255,179,71,.2); color: var(--amber); border: 1px solid var(--amber); }
+    .sev-low       { background: rgba(0,230,118,.1);  color: var(--green); border: 1px solid var(--green); }
+    .sev-informational { background: rgba(122,138,170,.15); color: var(--text-muted); border: 1px solid var(--border); }
+
+    /* ── Stats Dashboard ─────────────────────────────────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+      margin-bottom: 1rem;
+    }
+    .stat-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .85rem;
+      text-align: center;
+    }
+    .stat-box .stat-num {
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .stat-box .stat-label {
+      font-size: .7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-top: .25rem;
+    }
+    .stat-cyan   { color: var(--cyan); }
+    .stat-red    { color: var(--red); }
+    .stat-amber  { color: var(--amber); }
+    .stat-green  { color: var(--green); }
+
+    /* ── Event Cards ────────────────────────────────────────────────────── */
+    .event-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: .75rem;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .event-card:hover { background: var(--bg-input); border-left-color: var(--cyan); }
+    .event-card.sev-border-critical { border-left-color: var(--red); }
+    .event-card.sev-border-high     { border-left-color: #ff643c; }
+    .event-card.sev-border-medium   { border-left-color: var(--amber); }
+    .event-card.sev-border-low      { border-left-color: var(--green); }
+
+    .event-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: .5rem;
+    }
+    .event-id-badge {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--cyan);
+      padding: .2em .6em;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .event-name { font-size: .9rem; font-weight: 500; }
+    .event-summary { font-size: .82rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── Detail Panel ───────────────────────────────────────────────────── */
+    .detail-section {
+      margin-bottom: 1.25rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-section:last-child { border-bottom: none; }
+    .detail-label {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--cyan);
+      margin-bottom: .5rem;
+    }
+    .detail-text {
+      font-size: .85rem;
+      color: var(--text-main);
+      line-height: 1.65;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+      margin-bottom: .4rem;
+      font-size: .83rem;
+    }
+    .checklist-item i { color: var(--cyan); margin-top: .15rem; flex-shrink: 0; }
+
+    /* ── MITRE Box ──────────────────────────────────────────────────────── */
+    .mitre-box {
+      background: rgba(124,77,255,.08);
+      border: 1px solid rgba(124,77,255,.3);
+      border-radius: 6px;
+      padding: .85rem 1rem;
+    }
+    .mitre-id {
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      color: #b388ff;
+      font-weight: 700;
+    }
+    .mitre-name { font-size: .9rem; font-weight: 600; color: var(--text-main); }
+    .mitre-tactic { font-size: .75rem; color: var(--text-muted); }
+    .mitre-desc { font-size: .82rem; color: var(--text-muted); margin-top: .5rem; line-height: 1.55; }
+
+    /* ── Raw Log ─────────────────────────────────────────────────────────── */
+    .raw-log {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .75rem;
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      color: #8ab4f8;
+      overflow-x: auto;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* ── Threat Hunt ─────────────────────────────────────────────────────── */
+    .hunt-finding {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .9rem 1rem;
+      margin-bottom: .65rem;
+    }
+    .hunt-finding .finding-type {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    /* ── Report ──────────────────────────────────────────────────────────── */
+    .priority-badge {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      padding: .15em .5em;
+      border-radius: 2px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .p-critical { background: rgba(255,61,87,.2); color: var(--red); }
+    .p-high     { background: rgba(255,179,71,.2); color: var(--amber); }
+    .p-medium   { background: rgba(0,212,255,.1); color: var(--cyan); }
+    .p-standard, .p-low { background: rgba(122,138,170,.1); color: var(--text-muted); }
+
+    /* ── Loading spinner ─────────────────────────────────────────────────── */
+    .spinner-ring {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Tabs ────────────────────────────────────────────────────────────── */
+    .soc-tabs { display: flex; gap: .25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+    .soc-tab {
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-muted); padding: .6rem .9rem;
+      font-family: var(--font-mono); font-size: .75rem;
+      text-transform: uppercase; letter-spacing: .07em;
+      cursor: pointer; transition: color .15s, border-color .15s;
+      margin-bottom: -1px;
+    }
+    .soc-tab:hover { color: var(--text-main); }
+    .soc-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .sidebar { max-height: none; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+
+    /* ── Scrollbar styling ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Welcome screen ──────────────────────────────────────────────────── */
+    .welcome-screen {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 60vh; text-align: center; padding: 2rem;
+    }
+    .welcome-screen .ascii-art {
+      font-family: var(--font-mono);
+      font-size: .7rem; color: var(--border);
+      line-height: 1.4; margin-bottom: 2rem;
+      white-space: pre;
+    }
+    .welcome-screen h2 { color: var(--cyan); font-size: 1.4rem; margin-bottom: .5rem; }
+    .welcome-screen p { color: var(--text-muted); max-width: 480px; font-size: .9rem; }
+  </style>
+</head>
+
+<body>
+
+<!-- ── Navigation ───────────────────────────────────────────────────────────── -->
+<nav class="soc-nav">
+  <div class="status-dot" id="statusDot"></div>
+  <div class="soc-logo">SOC<span>Copilot</span></div>
+  <div class="nav-status" id="navStatus">SYSTEM READY — Awaiting log upload</div>
+  <div style="flex:1"></div>
+  <div style="font-size:.72rem;color:var(--text-muted);font-family:var(--font-mono)">
+    <i class="bi bi-shield-check" style="color:var(--green)"></i>
+    AI-Powered Security Analysis
+  </div>
+</nav>
+
+<!-- ── Main Layout ───────────────────────────────────────────────────────────── -->
+<div class="main-grid">
+
+  <!-- ── Sidebar: Upload + Dashboard ──────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <!-- Upload -->
+    <div class="soc-card-header">
+      <i class="bi bi-cloud-upload"></i> Log Ingestion
+    </div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".json,.csv" style="display:none" onchange="handleFileSelect(event)" />
+      <div class="upload-icon"><i class="bi bi-file-earmark-code"></i></div>
+      <p><strong>Drop log file here</strong><br>JSON or CSV — Windows Security Events</p>
+    </div>
+
+    <div style="margin:.75rem 0;display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn-soc btn-sm" onclick="loadSampleLogs()">
+        <i class="bi bi-database"></i> Load Sample Logs
+      </button>
+      <button class="btn-soc btn-amber btn-sm" id="analyzeBtn" style="display:none" onclick="runAnalysis()">
+        <i class="bi bi-cpu"></i> Analyze
+      </button>
+    </div>
+
+    <div id="fileInfo" style="display:none" class="soc-card" style="padding:.75rem">
+      <div style="font-size:.8rem;color:var(--text-muted);font-family:var(--font-mono)" id="fileInfoText"></div>
+    </div>
+
+    <!-- Dashboard Stats -->
+    <div id="dashboardSection" style="display:none">
+      <div class="soc-card-header" style="margin-top:1.25rem">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-num stat-cyan" id="statTotal">0</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num stat-red" id="statSuspicious">0</div>
+          <div class="stat-label">Suspicious</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num stat-amber" id="statCritical">0</div>
+          <div class="stat-label">Critical</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num stat-green" id="statMitre">0</div>
+          <div class="stat-label">MITRE Tags</div>
+        </div>
+      </div>
+
+      <!-- Severity breakdown bar -->
+      <div style="font-size:.7rem;color:var(--text-muted);margin-bottom:.35rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em">Severity Breakdown</div>
+      <div id="severityBar" style="display:flex;border-radius:4px;overflow:hidden;height:8px;margin-bottom:.75rem"></div>
+      <div id="severityLegend" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem"></div>
+
+      <!-- Threat Hunt Button -->
+      <button class="btn-soc btn-amber w-100" id="threatHuntBtn" onclick="runThreatHunt()">
+        <i class="bi bi-crosshair"></i> Run Threat Hunt
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ── Content Area ──────────────────────────────────────────────────────── -->
+  <main class="content-area">
+
+    <!-- Welcome Screen (shown before any analysis) -->
+    <div id="welcomeScreen" class="welcome-screen">
+      <div class="ascii-art">
+ ____  ___   ____     ____                  _  __
+/ ___||  _  |/ ___|   / ___|___  _ __  _ __(_)/ _| ___  ___
+\___ \| | | | |      | |   / _ \| '_ \| '__| | |_ / _ \/ __|
+ ___) | |_| | |___   | |__| (_) | |_) | |  | |  _| (_) \__ \
+|____/|____/ \____|   \____\___/| .__/|_|  |_|_|  \___/|___/
+                                 |_|
+      </div>
+      <h2>AI-Powered Security Log Investigator</h2>
+      <p>Upload Windows Security Event Logs (JSON or CSV) or load the sample dataset to get AI-driven threat analysis, MITRE ATT&CK mapping, and investigation guidance.</p>
+      <div style="display:flex;gap:.75rem;margin-top:1.25rem;flex-wrap:wrap;justify-content:center">
+        <button class="btn-soc" onclick="loadSampleLogs()"><i class="bi bi-play-circle"></i> Try Sample Logs</button>
+        <button class="btn-soc btn-sm" style="opacity:.6" onclick="document.getElementById('fileInput').click()"><i class="bi bi-upload"></i> Upload Your Logs</button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingScreen" style="display:none" class="welcome-screen">
+      <div class="spinner-ring" style="margin-bottom:1.5rem"></div>
+      <div style="font-family:var(--font-mono);color:var(--cyan);font-size:.9rem" id="loadingMsg">Initializing AI analysis engine...</div>
+      <div style="font-size:.78rem;color:var(--text-muted);margin-top:.4rem">This may take a moment for large log files.</div>
+    </div>
+
+    <!-- Results Tabs -->
+    <div id="resultsSection" style="display:none">
+
+      <div class="soc-tabs">
+        <button class="soc-tab active" onclick="showTab('events')"><i class="bi bi-list-ul"></i> Events</button>
+        <button class="soc-tab" onclick="showTab('report')"><i class="bi bi-file-earmark-text"></i> Report</button>
+        <button class="soc-tab" onclick="showTab('threat-hunt')"><i class="bi bi-crosshair2"></i> Threat Hunt</button>
+        <button class="soc-tab" onclick="showTab('mitre')"><i class="bi bi-diagram-3"></i> MITRE ATT&CK</button>
+      </div>
+
+      <!-- ── Events Tab ───────────────────────────────────────────────────── -->
+      <div id="tab-events">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+
+          <!-- Event List -->
+          <div>
+            <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.6rem;font-family:var(--font-mono)">
+              CLICK AN EVENT TO SEE AI ANALYSIS
+            </div>
+            <div id="eventList"></div>
+          </div>
+
+          <!-- Event Detail -->
+          <div id="eventDetail">
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:2rem;text-align:center;color:var(--text-muted)">
+              <i class="bi bi-cursor" style="font-size:2rem;margin-bottom:.75rem;display:block"></i>
+              Select an event from the list to view the AI analysis.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Report Tab ───────────────────────────────────────────────────── -->
+      <div id="tab-report" style="display:none">
+        <div id="reportContent"></div>
+      </div>
+
+      <!-- ── Threat Hunt Tab ──────────────────────────────────────────────── -->
+      <div id="tab-threat-hunt" style="display:none">
+        <div id="threatHuntContent">
+          <div style="text-align:center;padding:3rem;color:var(--text-muted)">
+            <i class="bi bi-crosshair" style="font-size:2.5rem;margin-bottom:1rem;display:block;color:var(--amber)"></i>
+            <p>Click <strong style="color:var(--amber)">Run Threat Hunt</strong> in the sidebar to scan events for attack patterns.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MITRE ATT&CK Tab ─────────────────────────────────────────────── -->
+      <div id="tab-mitre" style="display:none">
+        <div id="mitreContent"></div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+
+<!-- ── JavaScript ────────────────────────────────────────────────────────────── -->
+<script>
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentEvents = [];
+let currentReport = {};
+let uploadedFile = null;
+
+// ── Drag and Drop on Upload Zone ─────────────────────────────────────────────
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+
+// ── File Selection ────────────────────────────────────────────────────────────
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  uploadedFile = file;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['json', 'csv'].includes(ext)) {
+    alert('Please upload a .json or .csv file.');
+    return;
+  }
+  document.getElementById('fileInfo').style.display = 'block';
+  document.getElementById('fileInfoText').textContent =
+    `📄 ${file.name}  (${(file.size / 1024).toFixed(1)} KB)`;
+  document.getElementById('analyzeBtn').style.display = 'inline-flex';
+  setStatus('File loaded — click Analyze to begin', false);
+}
+
+// ── Load Sample Logs ──────────────────────────────────────────────────────────
+async function loadSampleLogs() {
+  setStatus('Loading sample Windows Security Events...', true);
+  try {
+    const res = await fetch('/api/sample-logs');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Convert the JSON data to a Blob and simulate a file upload
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    uploadedFile = new File([blob], 'windows_security_events.json', { type: 'application/json' });
+
+    document.getElementById('fileInfo').style.display = 'block';
+    document.getElementById('fileInfoText').textContent =
+      `📄 windows_security_events.json  (${data.length} sample events)`;
+    document.getElementById('analyzeBtn').style.display = 'inline-flex';
+    setStatus('Sample logs loaded — click Analyze to start AI investigation', false);
+    runAnalysis();
+  } catch (err) {
+    setStatus('Failed to load sample logs: ' + err.message, false);
+  }
+}
+
+// ── Run Analysis ──────────────────────────────────────────────────────────────
+async function runAnalysis() {
+  if (!uploadedFile) return;
+
+  showLoading('Sending logs to AI analysis engine...');
+
+  const formData = new FormData();
+  formData.append('file', uploadedFile);
+
+  const loadingMessages = [
+    'Parsing Windows Security Event IDs...',
+    'Calculating severity scores...',
+    'Mapping to MITRE ATT\u0026CK framework...',
+    'Running AI reasoning engine...',
+    'Generating investigation report...'
+  ];
+  let msgIndex = 0;
+  const msgInterval = setInterval(() => {
+    msgIndex = (msgIndex + 1) % loadingMessages.length;
+    const el = document.getElementById('loadingMsg');
+    if (el) el.textContent = loadingMessages[msgIndex];
+  }, 2000);
+
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+    const data = await res.json();
+    clearInterval(msgInterval);
+
+    if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
+
+    currentEvents = data.events;
+    currentReport = data.report;
+
+    renderDashboard(data);
+    renderEventList(data.events);
+    renderReport(data.report);
+    renderMitre(data.events);
+
+    hideLoading();
+    document.getElementById('dashboardSection').style.display = 'block';
+    document.getElementById('resultsSection').style.display = 'block';
+    setStatus(`Analysis complete — ${data.total_events} events processed`, false);
+
+  } catch (err) {
+    clearInterval(msgInterval);
+    hideLoading();
+    setStatus('Analysis error: ' + err.message, false);
+    alert('Analysis failed: ' + err.message);
+  }
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function renderDashboard(data) {
+  document.getElementById('statTotal').textContent = data.total_events;
+  document.getElementById('statSuspicious').textContent = data.report.statistics.suspicious_events;
+  document.getElementById('statCritical').textContent = data.report.statistics.severity_breakdown.Critical;
+  document.getElementById('statMitre').textContent = Object.keys(data.report.statistics.mitre_techniques || {}).length;
+
+  // Severity bar
+  const sev = data.report.statistics.severity_breakdown;
+  const total = data.total_events || 1;
+  const colors = { Critical: '#ff3d57', High: '#ff643c', Medium: '#ffb347', Low: '#00e676', Informational: '#3a4a6b' };
+  const bar = document.getElementById('severityBar');
+  const legend = document.getElementById('severityLegend');
+  bar.innerHTML = '';
+  legend.innerHTML = '';
+
+  Object.entries(sev).forEach(([level, count]) => {
+    if (count > 0) {
+      const pct = (count / total * 100).toFixed(1);
+      bar.innerHTML += `<div style="width:${pct}%;background:${colors[level]}" title="${level}: ${count}"></div>`;
+      legend.innerHTML += `<div style="font-size:.65rem;color:${colors[level]};font-family:var(--font-mono)">${level}: ${count}</div>`;
+    }
+  });
+}
+
+// ── Event List ────────────────────────────────────────────────────────────────
+function renderEventList(events) {
+  const list = document.getElementById('eventList');
+  list.innerHTML = '';
+  events.forEach((ev, i) => {
+    const sev = ev.severity.level.toLowerCase();
+    const summary = ev.analysis?.summary || 'Analyzing...';
+    list.innerHTML += `
+      <div class="event-card sev-border-${sev}" onclick="showEventDetail(${i})">
+        <div class="event-header">
+          <span class="event-id-badge">${ev.event_id}</span>
+          <span class="badge-sev sev-${sev}">${ev.severity.level}</span>
+          <span style="font-size:.72rem;color:var(--text-muted);font-family:var(--font-mono);margin-left:auto">#${ev.index}</span>
+        </div>
+        <div class="event-name">${ev.event_name}</div>
+        <div class="event-summary" style="margin-top:.35rem">${summary.substring(0, 120)}${summary.length > 120 ? '...' : ''}</div>
+      </div>`;
+  });
+}
+
+// ── Event Detail ──────────────────────────────────────────────────────────────
+function showEventDetail(index) {
+  const ev = currentEvents[index];
+  const a = ev.analysis;
+  const sev = ev.severity.level.toLowerCase();
+
+  let stepsHtml = '';
+  if (a.investigation_steps) {
+    a.investigation_steps.forEach((step, i) => {
+      stepsHtml += `<div class="checklist-item"><i class="bi bi-arrow-right-circle"></i><span>${step}</span></div>`;
+    });
+  }
+
+  let remHtml = '';
+  if (a.remediation) {
+    a.remediation.forEach(r => {
+      remHtml += `<div class="checklist-item"><i class="bi bi-shield-check" style="color:var(--green)"></i><span>${r}</span></div>`;
+    });
+  }
+
+  document.getElementById('eventDetail').innerHTML = `
+    <div class="soc-card">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+        <span class="event-id-badge" style="font-size:.85rem">${ev.event_id}</span>
+        <span style="font-size:1rem;font-weight:600">${ev.event_name}</span>
+        <span class="badge-sev sev-${sev}" style="font-size:.75rem">${ev.severity.level} (${ev.severity.score}/100)</span>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label"><i class="bi bi-chat-text"></i> Summary</div>
+        <div class="detail-text">${a.summary || 'No summary available.'}</div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label"><i class="bi bi-info-circle"></i> Security Explanation</div>
+        <div class="detail-text">${a.security_explanation || ''}</div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label"><i class="bi bi-exclamation-triangle"></i> Threat Assessment</div>
+        <div class="detail-text">${a.threat_assessment || ''}</div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label"><i class="bi bi-search"></i> Investigation Steps</div>
+        ${stepsHtml || '<div class="detail-text" style="color:var(--text-muted)">No steps available.</div>'}
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-label"><i class="bi bi-tools"></i> Remediation</div>
+        ${remHtml || ''}
+      </div>
+
+      ${a.analyst_tip ? `
+      <div class="detail-section" style="background:rgba(0,212,255,.04);border-radius:6px;padding:.85rem;border:1px solid rgba(0,212,255,.1)">
+        <div class="detail-label"><i class="bi bi-lightbulb"></i> Analyst Tip</div>
+        <div class="detail-text" style="color:var(--cyan-dim)">${a.analyst_tip}</div>
+      </div>` : ''}
+
+      <div class="detail-section">
+        <div class="detail-label"><i class="bi bi-diagram-3"></i> MITRE ATT&CK</div>
+        <div class="mitre-box">
+          <div class="mitre-id">${ev.mitre.technique_id}</div>
+          <div class="mitre-name">${ev.mitre.technique_name}</div>
+          <div class="mitre-tactic">Tactic: ${ev.mitre.tactic}</div>
+          <div class="mitre-desc">${ev.mitre.description}</div>
+          <a href="${ev.mitre.url}" target="_blank" style="font-size:.75rem;color:#b388ff;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;margin-top:.5rem">
+            <i class="bi bi-box-arrow-up-right"></i> View on MITRE ATT&CK
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="detail-label"><i class="bi bi-code-slash"></i> Raw Event Data</div>
+        <pre class="raw-log">${JSON.stringify(ev.raw, null, 2)}</pre>
+      </div>
+    </div>`;
+}
+
+// ── Report ─────────────────────────────────────────────────────────────────────
+function renderReport(report) {
+  const riskColors = { CRITICAL: '#ff3d57', HIGH: '#ff643c', MEDIUM: '#ffb347', LOW: '#00e676' };
+  const color = riskColors[report.risk_level] || '#7a8aaa';
+
+  let checklistHtml = '';
+  (report.investigation_checklist || []).forEach(item => {
+    checklistHtml += `
+      <div class="soc-card" style="margin-bottom:.65rem">
+        <div style="display:flex;align-items:flex-start;gap:.75rem">
+          <span class="priority-badge p-${item.priority.toLowerCase()}">${item.priority}</span>
+          <div>
+            <div style="font-size:.85rem;font-weight:500;margin-bottom:.25rem">${item.action}</div>
+            <div style="font-size:.78rem;color:var(--text-muted)">${item.why}</div>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  let remHtml = '';
+  (report.remediation_recommendations || []).forEach(r => {
+    remHtml += `
+      <div class="soc-card" style="margin-bottom:.65rem">
+        <div style="display:flex;align-items:flex-start;gap:.75rem">
+          <span class="priority-badge p-${r.priority.toLowerCase()}">${r.priority}</span>
+          <div>
+            <div style="font-size:.73rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">${r.category}</div>
+            <div style="font-size:.85rem">${r.action}</div>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  let mitreTagsHtml = '';
+  Object.entries(report.statistics.mitre_techniques || {}).forEach(([t, count]) => {
+    mitreTagsHtml += `<span style="background:rgba(124,77,255,.1);border:1px solid rgba(124,77,255,.25);border-radius:3px;padding:.2em .6em;font-size:.75rem;font-family:var(--font-mono);color:#b388ff">${t} (${count})</span> `;
+  });
+
+  document.getElementById('reportContent').innerHTML = `
+    <div class="soc-card" style="border-left:4px solid ${color};margin-bottom:1.25rem">
+      <div style="font-size:.7rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.35rem">
+        REPORT GENERATED: ${report.generated_at}
+      </div>
+      <div style="font-size:.8rem;font-family:var(--font-mono);color:${color};margin-bottom:.5rem">OVERALL RISK: ${report.risk_level}</div>
+      <div style="font-size:.95rem;line-height:1.6">${report.summary}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1.25rem">
+      ${Object.entries(report.statistics.severity_breakdown || {}).map(([level, count]) => `
+        <div class="stat-box">
+          <div class="stat-num" style="font-size:1.5rem;color:var(--text-main)">${count}</div>
+          <div class="stat-label"><span class="badge-sev sev-${level.toLowerCase()}">${level}</span></div>
+        </div>`).join('')}
+    </div>
+
+    ${mitreTagsHtml ? `
+    <div style="margin-bottom:1.25rem">
+      <div class="detail-label"><i class="bi bi-diagram-3"></i> MITRE ATT&CK Techniques Identified</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem">${mitreTagsHtml}</div>
+    </div>` : ''}
+
+    <div style="margin-bottom:1.25rem">
+      <div class="detail-label"><i class="bi bi-list-check"></i> Investigation Checklist</div>
+      ${checklistHtml}
+    </div>
+
+    <div>
+      <div class="detail-label"><i class="bi bi-tools"></i> Remediation Recommendations</div>
+      ${remHtml}
+    </div>`;
+}
+
+// ── MITRE ATT&CK Tab ──────────────────────────────────────────────────────────
+function renderMitre(events) {
+  const techniques = {};
+  events.forEach(ev => {
+    const id = ev.mitre.technique_id;
+    if (id !== 'N/A') {
+      if (!techniques[id]) {
+        techniques[id] = { ...ev.mitre, events: [] };
+      }
+      techniques[id].events.push({ event_id: ev.event_id, name: ev.event_name, sev: ev.severity.level });
+    }
+  });
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem">';
+  Object.values(techniques).forEach(t => {
+    const evBadges = t.events.map(e =>
+      `<span class="event-id-badge" style="font-size:.65rem">${e.event_id} — ${e.name}</span>`).join(' ');
+    html += `
+      <div class="soc-card">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem">
+          <span class="mitre-id" style="font-size:.95rem">${t.technique_id}</span>
+          <span style="font-size:.85rem;font-weight:600">${t.technique_name}</span>
+        </div>
+        <div class="mitre-tactic" style="margin-bottom:.5rem">Tactic: ${t.tactic}</div>
+        <div class="mitre-desc">${t.description}</div>
+        <div style="margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.35rem">${evBadges}</div>
+        <a href="${t.url}" target="_blank" style="display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;color:#b388ff;text-decoration:none;margin-top:.6rem">
+          <i class="bi bi-box-arrow-up-right"></i> MITRE ATT&CK Reference
+        </a>
+      </div>`;
+  });
+  html += '</div>';
+  document.getElementById('mitreContent').innerHTML = html;
+}
+
+// ── Threat Hunt ───────────────────────────────────────────────────────────────
+async function runThreatHunt() {
+  if (!currentEvents.length) return;
+  document.getElementById('threatHuntBtn').disabled = true;
+  setStatus('Running threat hunt...', true);
+  showTab('threat-hunt');
+
+  document.getElementById('threatHuntContent').innerHTML = `
+    <div style="text-align:center;padding:2rem">
+      <div class="spinner-ring" style="margin:0 auto 1rem"></div>
+      <div style="font-family:var(--font-mono);color:var(--amber)">Scanning for threat patterns...</div>
+    </div>`;
+
+  try {
+    const res = await fetch('/api/threat-hunt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ events: currentEvents.map(e => e.raw) })
+    });
+    const data = await res.json();
+
+    const sevColors = { Critical: '#ff3d57', High: '#ff643c', Medium: '#ffb347', Low: '#00e676', Informational: '#7a8aaa' };
+    let html = `
+      <div style="margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem">
+        <i class="bi bi-crosshair" style="color:var(--amber);font-size:1.25rem"></i>
+        <div>
+          <div style="font-weight:600">Threat Hunt Results</div>
+          <div style="font-size:.8rem;color:var(--text-muted)">${data.findings.length} finding(s) identified</div>
+        </div>
+      </div>`;
+
+    data.findings.forEach(f => {
+      const c = sevColors[f.severity] || '#7a8aaa';
+      html += `
+        <div class="hunt-finding" style="border-left:3px solid ${c}">
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
+            <span class="finding-type" style="color:${c}">${f.type}</span>
+            <span class="badge-sev sev-${f.severity.toLowerCase()}">${f.severity}</span>
+          </div>
+          <div style="font-size:.85rem;margin-bottom:.4rem">${f.description}</div>
+          <div style="font-size:.78rem;color:var(--cyan-dim)"><i class="bi bi-arrow-return-right"></i> ${f.recommendation}</div>
+        </div>`;
+    });
+
+    document.getElementById('threatHuntContent').innerHTML = html;
+    setStatus(`Threat hunt complete — ${data.findings.length} finding(s)`, false);
+  } catch (err) {
+    document.getElementById('threatHuntContent').innerHTML = `<div style="color:var(--red)">Threat hunt failed: ${err.message}</div>`;
+    setStatus('Threat hunt failed', false);
+  }
+  document.getElementById('threatHuntBtn').disabled = false;
+}
+
+// ── UI Helpers ────────────────────────────────────────────────────────────────
+function showTab(name) {
+  ['events', 'report', 'threat-hunt', 'mitre'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = (t === name) ? 'block' : 'none';
+  });
+  document.querySelectorAll('.soc-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.toLowerCase().includes(name.replace('-', ' ')));
+  });
+}
+
+function showLoading(msg) {
+  document.getElementById('welcomeScreen').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('loadingMsg').textContent = msg;
+  setStatus(msg, true);
+}
+
+function hideLoading() {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('welcomeScreen').style.display = 'none';
+}
+
+function setStatus(msg, analyzing) {
+  document.getElementById('navStatus').textContent = msg.toUpperCase();
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (analyzing ? ' analyzing' : '');
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
