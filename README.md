@@ -1,6 +1,6 @@
 # 🛡️ SOC Copilot — AI-Powered Security Log Investigation Agent
 
-> **Microsoft Agents League Hackathon** | Reasoning Agents Track
+> 
 
 A beginner-friendly web application that acts as an AI Security Operations Center (SOC) analyst. Upload Windows Security Event Logs, and SOC Copilot uses Claude AI to explain what happened, assess threats, map to MITRE ATT&CK, and recommend investigation steps — all in plain English.
 
