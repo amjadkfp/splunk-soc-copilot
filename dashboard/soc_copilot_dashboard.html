@@ -1,0 +1,571 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: transparent; }
+  .dash {
+    background: #0a0d14;
+    border: 1px solid #1e2535;
+    border-radius: 12px;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    width: 100%;
+    min-height: 580px;
+  }
+  .topbar {
+    background: #0d1220;
+    border-bottom: 1px solid #1a2540;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-icon {
+    width: 28px; height: 28px;
+    background: #0d4fba;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #1a6bff;
+  }
+  .brand-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e2eeff;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+  }
+  .brand-sub {
+    font-size: 9px;
+    color: #4a7ac8;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #00ff88;
+    box-shadow: 0 0 6px #00ff88;
+    animation: pulse-green 2s infinite;
+  }
+  @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:.4} }
+  @keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes scroll-logs { 0%{transform:translateY(0)} 100%{transform:translateY(-50%)} }
+  @keyframes blink-cursor { 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes fade-in { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes scan-line { 0%{top:0} 100%{top:100%} }
+  .live-badge {
+    background: #0a1a0a;
+    border: 1px solid #00cc55;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 9px;
+    color: #00cc55;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .time-display {
+    font-size: 10px;
+    color: #3a5580;
+    letter-spacing: 1px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 1px;
+    background: #111825;
+  }
+  .panel {
+    background: #0b0f1a;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #182038;
+  }
+  .panel-title {
+    font-size: 8px;
+    color: #1e88e5;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+  }
+  .panel-badge {
+    font-size: 7px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .badge-blue { background: #0a1d3d; color: #1e88e5; border: 1px solid #1a3a6a; }
+  .badge-red { background: #2a0808; color: #ff3b3b; border: 1px solid #5a1010; }
+  .badge-yellow { background: #2a1f00; color: #ffa726; border: 1px solid #5a3a00; }
+  .badge-green { background: #002a14; color: #00cc55; border: 1px solid #005520; }
+  .log-stream {
+    height: 130px;
+    overflow: hidden;
+    position: relative;
+  }
+  .log-inner {
+    animation: scroll-logs 18s linear infinite;
+  }
+  .log-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 2px 0;
+    border-bottom: 1px solid #0f1520;
+    font-size: 8px;
+    font-family: 'Courier New', monospace;
+    line-height: 1.4;
+  }
+  .log-time { color: #2a4a7a; min-width: 52px; }
+  .log-eid { min-width: 34px; }
+  .eid-auth { color: #00cc88; }
+  .eid-fail { color: #ff4444; }
+  .eid-proc { color: #ffa726; }
+  .eid-user { color: #ab47bc; }
+  .log-msg { color: #4a6a9a; flex: 1; }
+  .log-host { color: #2a5a8a; }
+  .ai-panel { grid-column: 2 / 3; }
+  .ai-content {
+    background: #070c16;
+    border: 1px solid #102038;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .ai-prefix {
+    font-size: 7px;
+    color: #1a5faa;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .ai-text {
+    font-size: 8.5px;
+    color: #7ab0e8;
+    line-height: 1.6;
+    font-family: 'Courier New', monospace;
+  }
+  .ai-cursor {
+    display: inline-block;
+    width: 1px; height: 9px;
+    background: #1e88e5;
+    vertical-align: text-bottom;
+    animation: blink-cursor 1s infinite;
+    margin-left: 1px;
+  }
+  .severity-bar {
+    height: 12px;
+    border-radius: 2px;
+    margin: 3px 0;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  .sev-fill {
+    height: 100%;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    padding: 0 5px;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: width .3s;
+  }
+  .sev-label { font-size: 7px; color: #3a5580; min-width: 65px; letter-spacing: 0.5px; }
+  .sev-score { font-size: 8px; font-weight: 700; min-width: 22px; text-align: right; }
+  .sev-critical { background: linear-gradient(90deg,#8b0000,#cc0000); color: #ffaaaa; }
+  .sev-high     { background: linear-gradient(90deg,#7a2700,#e65100); color: #ffccaa; }
+  .sev-medium   { background: linear-gradient(90deg,#5a3a00,#f57f17); color: #ffe082; }
+  .sev-low      { background: linear-gradient(90deg,#003a00,#2e7d32); color: #a5d6a7; }
+  .score-crit   { color: #ff3b3b; }
+  .score-high   { color: #ff7043; }
+  .score-med    { color: #ffa726; }
+  .score-low    { color: #66bb6a; }
+  .mitre-row {
+    display: grid;
+    grid-template-columns: 56px 1fr 70px;
+    gap: 4px;
+    padding: 3px 0;
+    border-bottom: 1px solid #0f1520;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+  }
+  .mitre-id { font-size: 7px; color: #1e88e5; letter-spacing: 0.5px; }
+  .mitre-name { font-size: 7.5px; color: #5a7aaa; }
+  .mitre-tactic {
+    font-size: 6.5px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+  .tactic-init { background:#1a0a2e; color:#ba68c8; border:1px solid #4a2060; }
+  .tactic-exec { background:#1a1000; color:#ffa726; border:1px solid #5a3000; }
+  .tactic-priv { background:#0a1a00; color:#69f0ae; border:1px solid #1a4a00; }
+  .tactic-cred { background:#1a0000; color:#ff5252; border:1px solid #5a0000; }
+  .tactic-disc { background:#001a2a; color:#4dd0e1; border:1px solid #004a6a; }
+  .threat-alert {
+    background: #0f0a04;
+    border: 1px solid #4a2a00;
+    border-left: 3px solid #ff7043;
+    border-radius: 4px;
+    padding: 5px 8px;
+    margin-bottom: 5px;
+    animation: fade-in .4s ease;
+  }
+  .threat-alert.critical {
+    border-left-color: #ff1744;
+    background: #120404;
+    border-color: #5a0a0a;
+  }
+  .threat-type { font-size: 7.5px; color: #ff7043; letter-spacing: 0.5px; font-weight: 700; text-transform: uppercase; }
+  .threat-type.critical { color: #ff1744; }
+  .threat-detail { font-size: 7px; color: #4a3a2a; margin-top: 2px; line-height: 1.4; }
+  .threat-meta { font-size: 6.5px; color: #2a2015; margin-top: 3px; }
+  .timeline-wrap { position: relative; padding: 4px 0; }
+  .tl-line {
+    position: absolute;
+    left: 34px;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: #182038;
+  }
+  .tl-event {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 1;
+  }
+  .tl-time { font-size: 6.5px; color: #2a4a7a; min-width: 30px; text-align: right; margin-top: 2px; }
+  .tl-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 1px;
+    border: 1px solid;
+  }
+  .tl-info { background: #102038; border-color: #1e88e5; }
+  .tl-warn { background: #2a1800; border-color: #ff7043; }
+  .tl-crit { background: #1a0000; border-color: #ff1744; box-shadow: 0 0 6px #ff1744; animation: pulse-red 1.5s infinite; }
+  .tl-desc { font-size: 7.5px; color: #4a6a9a; line-height: 1.4; }
+  .tl-host { font-size: 6px; color: #2a3a5a; margin-top: 1px; }
+  .rec-item {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 5px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: #070c16;
+    border: 1px solid #102030;
+  }
+  .rec-num { font-size: 8px; color: #1e88e5; font-weight: 700; min-width: 12px; }
+  .rec-text { font-size: 7.5px; color: #4a6a9a; line-height: 1.4; }
+  .rec-text span { color: #1e7bd4; }
+  .span-3 { grid-column: 1 / 4; }
+  .span-2 { grid-column: 2 / 4; }
+  .scanline {
+    position: absolute;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,#0d4fba20,transparent);
+    animation: scan-line 4s linear infinite;
+    pointer-events: none;
+  }
+  .mini-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px;
+    background: #070c16;
+    border: 1px solid #102030;
+    border-radius: 4px;
+  }
+  .mini-val { font-size: 14px; font-weight: 700; }
+  .mini-lbl { font-size: 6px; color: #2a4070; text-transform: uppercase; letter-spacing: 1px; margin-top: 1px; }
+</style>
+
+<div class="dash">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="5" stroke="#4da6ff" stroke-width="1.2"/>
+          <circle cx="8" cy="8" r="2" fill="#1e88e5"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="#4da6ff" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">SOC Copilot</div>
+        <div class="brand-sub">AI-Powered Security Investigation Agent</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-badge">● Live</div>
+      <div class="status-dot"></div>
+      <div class="time-display" id="clock">2025-06-13 · 04:23:11 UTC</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto;gap:1px;background:#111825;">
+
+    <!-- LOG STREAM -->
+    <div class="panel" style="grid-row:1">
+      <div class="scanline"></div>
+      <div class="panel-header">
+        <div class="panel-title">Windows Event Logs</div>
+        <div class="panel-badge badge-blue">WinEvtx</div>
+      </div>
+      <div class="log-stream">
+        <div class="log-inner">
+          <div class="log-row"><span class="log-time">04:23:11</span><span class="log-eid eid-fail">4625</span><span class="log-msg">Logon failure — Unknown user or bad password</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:23:10</span><span class="log-eid eid-fail">4625</span><span class="log-msg">Logon failure — Unknown user or bad password</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:23:09</span><span class="log-eid eid-proc">4688</span><span class="log-msg">New process: powershell.exe — parent: svchost</span><span class="log-host">WS04</span></div>
+          <div class="log-row"><span class="log-time">04:23:08</span><span class="log-eid eid-fail">4625</span><span class="log-msg">Logon failure — Unknown user or bad password</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:23:07</span><span class="log-eid eid-auth">4624</span><span class="log-msg">Logon success — Type 3 (Network) — svc_backup</span><span class="log-host">FS01</span></div>
+          <div class="log-row"><span class="log-time">04:23:06</span><span class="log-eid eid-user">4720</span><span class="log-msg">User account created — Administrator</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:23:05</span><span class="log-eid eid-fail">4625</span><span class="log-msg">Logon failure — Unknown user or bad password</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:23:04</span><span class="log-eid eid-proc">4688</span><span class="log-msg">New process: cmd.exe — parent: winlogon</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:23:03</span><span class="log-eid eid-auth">4624</span><span class="log-msg">Logon success — Type 10 (RemoteInteractive)</span><span class="log-host">SRV02</span></div>
+          <div class="log-row"><span class="log-time">04:23:02</span><span class="log-eid eid-fail">4625</span><span class="log-msg">Logon failure — Unknown user or bad password</span><span class="log-host">DC01</span></div>
+          <!-- duplicate for loop -->
+          <div class="log-row"><span class="log-time">04:23:01</span><span class="log-eid eid-fail">4625</span><span class="log-msg">Logon failure — Unknown user or bad password</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:23:00</span><span class="log-eid eid-proc">4688</span><span class="log-msg">New process: powershell.exe — parent: svchost</span><span class="log-host">WS04</span></div>
+          <div class="log-row"><span class="log-time">04:22:59</span><span class="log-eid eid-auth">4624</span><span class="log-msg">Logon success — Type 3 (Network) — svc_backup</span><span class="log-host">FS01</span></div>
+          <div class="log-row"><span class="log-time">04:22:58</span><span class="log-eid eid-user">4720</span><span class="log-msg">User account created — Administrator</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:22:57</span><span class="log-eid eid-fail">4625</span><span class="log-msg">Logon failure — Unknown user or bad password</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:22:56</span><span class="log-eid eid-proc">4688</span><span class="log-msg">New process: cmd.exe — parent: winlogon</span><span class="log-host">DC01</span></div>
+          <div class="log-row"><span class="log-time">04:22:55</span><span class="log-eid eid-auth">4624</span><span class="log-msg">Logon success — Type 10 (RemoteInteractive)</span><span class="log-host">SRV02</span></div>
+          <div class="log-row"><span class="log-time">04:22:54</span><span class="log-eid eid-fail">4625</span><span class="log-msg">Logon failure — Unknown user or bad password</span><span class="log-host">DC01</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI ANALYSIS -->
+    <div class="panel ai-panel" style="grid-row:1">
+      <div class="panel-header">
+        <div class="panel-title">AI Analysis</div>
+        <div class="panel-badge badge-blue">GPT-4o Engine</div>
+      </div>
+      <div class="ai-content">
+        <div class="ai-prefix">▶ Copilot Reasoning</div>
+        <div class="ai-text">
+          Detected <span style="color:#ff5252">147 failed logon attempts</span> from a single source against DC01 over 90s — consistent with automated brute-force credential stuffing. Following successful auth at 04:23:07 as <span style="color:#ffa726">svc_backup</span>, a suspicious <span style="color:#ba68c8">PowerShell</span> child process was spawned under svchost. Event 4720 (new admin account) is a strong indicator of persistence establishment. Confidence: <span style="color:#ff1744">CRITICAL</span><span class="ai-cursor"></span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+        <div class="mini-stat"><div class="mini-val" style="color:#ff1744">147</div><div class="mini-lbl">Failed Logins</div></div>
+        <div class="mini-stat"><div class="mini-val" style="color:#ffa726">3</div><div class="mini-lbl">IOCs Matched</div></div>
+        <div class="mini-stat"><div class="mini-val" style="color:#00cc88">90s</div><div class="mini-lbl">Attack Window</div></div>
+      </div>
+    </div>
+
+    <!-- SEVERITY SCORING -->
+    <div class="panel" style="grid-row:1">
+      <div class="panel-header">
+        <div class="panel-title">Severity Scoring</div>
+        <div class="panel-badge badge-red">4 Active</div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+          <div class="sev-label">Brute Force DC01</div>
+          <div class="severity-bar" style="flex:1"><div class="sev-fill sev-critical" style="width:97%">97</div></div>
+          <div class="sev-score score-crit">97</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+          <div class="sev-label">Priv Escalation</div>
+          <div class="severity-bar" style="flex:1"><div class="sev-fill sev-critical" style="width:91%">91</div></div>
+          <div class="sev-score score-crit">91</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+          <div class="sev-label">Suspicious PS</div>
+          <div class="severity-bar" style="flex:1"><div class="sev-fill sev-high" style="width:78%">78</div></div>
+          <div class="sev-score score-high">78</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+          <div class="sev-label">Lateral Move</div>
+          <div class="severity-bar" style="flex:1"><div class="sev-fill sev-medium" style="width:62%">62</div></div>
+          <div class="sev-score score-med">62</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <div class="sev-label">Recon Activity</div>
+          <div class="severity-bar" style="flex:1"><div class="sev-fill sev-low" style="width:34%">34</div></div>
+          <div class="sev-score score-low">34</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MITRE ATT&CK -->
+    <div class="panel" style="grid-row:2">
+      <div class="panel-header">
+        <div class="panel-title">MITRE ATT&CK Mapping</div>
+        <div class="panel-badge badge-blue">v14</div>
+      </div>
+      <div>
+        <div class="mitre-row" style="border-bottom:1px solid #182038;margin-bottom:3px;">
+          <div style="font-size:6.5px;color:#1a4070;">ID</div>
+          <div style="font-size:6.5px;color:#1a4070;">Technique</div>
+          <div style="font-size:6.5px;color:#1a4070;text-align:center;">Tactic</div>
+        </div>
+        <div class="mitre-row">
+          <div class="mitre-id">T1110.001</div>
+          <div class="mitre-name">Password Guessing</div>
+          <div class="mitre-tactic tactic-cred">Credential</div>
+        </div>
+        <div class="mitre-row">
+          <div class="mitre-id">T1059.001</div>
+          <div class="mitre-name">PowerShell Execution</div>
+          <div class="mitre-tactic tactic-exec">Execution</div>
+        </div>
+        <div class="mitre-row">
+          <div class="mitre-id">T1078.002</div>
+          <div class="mitre-name">Domain Accounts</div>
+          <div class="mitre-tactic tactic-init">Initial Acc.</div>
+        </div>
+        <div class="mitre-row">
+          <div class="mitre-id">T1136.001</div>
+          <div class="mitre-name">Local Account Creation</div>
+          <div class="mitre-tactic tactic-priv">Persistence</div>
+        </div>
+        <div class="mitre-row">
+          <div class="mitre-id">T1021.001</div>
+          <div class="mitre-name">Remote Desktop Protocol</div>
+          <div class="mitre-tactic tactic-disc">Lateral Mov.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THREAT HUNT -->
+    <div class="panel" style="grid-row:2">
+      <div class="panel-header">
+        <div class="panel-title">Threat Hunt</div>
+        <div class="panel-badge badge-red">● Critical</div>
+      </div>
+      <div>
+        <div class="threat-alert critical">
+          <div class="threat-type critical">🔴 Brute Force — DC01</div>
+          <div class="threat-detail">147 failed logons in 90s from 192.168.4.22 targeting Administrator, svc_backup, svc_sql accounts.</div>
+          <div class="threat-meta">IP: 192.168.4.22 · 04:21:41–04:23:11</div>
+        </div>
+        <div class="threat-alert critical">
+          <div class="threat-type critical">🔴 Privilege Escalation</div>
+          <div class="threat-detail">Event 4720: Admin account created post-compromise. svc_backup lateral movement to FS01 detected.</div>
+          <div class="threat-meta">Account: backdoor_admin · Host: DC01</div>
+        </div>
+        <div class="threat-alert">
+          <div class="threat-type">🟠 Suspicious Process</div>
+          <div class="threat-detail">powershell.exe spawned by svchost.exe — encoded command line, C2 beaconing pattern detected.</div>
+          <div class="threat-meta">PID: 8812 · Parent: 1284 · WS04</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div class="panel" style="grid-row:2">
+      <div class="panel-header">
+        <div class="panel-title">Remediation Guidance</div>
+        <div class="panel-badge badge-yellow">AI Steps</div>
+      </div>
+      <div>
+        <div class="rec-item">
+          <div class="rec-num">1</div>
+          <div class="rec-text"><span>Isolate DC01</span> immediately — block inbound from 192.168.4.22 at perimeter firewall (ACL deny).</div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num">2</div>
+          <div class="rec-text"><span>Disable backdoor_admin</span> account and audit AD for all recently created accounts (last 24h).</div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num">3</div>
+          <div class="rec-text"><span>Kill PID 8812</span> on WS04. Capture memory dump for forensics. Scan with Defender/CrowdStrike.</div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num">4</div>
+          <div class="rec-text"><span>Reset svc_backup</span> credentials. Enable MFA on all service accounts. Review delegation rights.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTACK TIMELINE -->
+    <div class="panel span-3" style="grid-row:3">
+      <div class="panel-header">
+        <div class="panel-title">Attack Chain Timeline</div>
+        <div class="panel-badge badge-red">Active Intrusion</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0;position:relative;">
+        <div style="position:absolute;top:16px;left:calc(100%/14);right:calc(100%/14);height:1px;background:#1e3060;z-index:0;"></div>
+        <div style="text-align:center;padding:0 4px;position:relative;z-index:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#1e3060;border:1px solid #1e88e5;margin:11px auto 5px;"></div>
+          <div style="font-size:7px;color:#1e88e5;margin-bottom:2px;">04:21:41</div>
+          <div style="font-size:7px;color:#4a6a9a;line-height:1.3;">Recon<br/>Port Scan</div>
+        </div>
+        <div style="text-align:center;padding:0 4px;position:relative;z-index:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#2a1800;border:1px solid #ff7043;margin:11px auto 5px;"></div>
+          <div style="font-size:7px;color:#ff7043;margin-bottom:2px;">04:21:55</div>
+          <div style="font-size:7px;color:#4a6a9a;line-height:1.3;">Brute Force<br/>DC01</div>
+        </div>
+        <div style="text-align:center;padding:0 4px;position:relative;z-index:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#1a0808;border:2px solid #ff1744;margin:11px auto 5px;box-shadow:0 0 6px #ff1744;animation:pulse-red 1.5s infinite;"></div>
+          <div style="font-size:7px;color:#ff1744;margin-bottom:2px;">04:23:07</div>
+          <div style="font-size:7px;color:#4a6a9a;line-height:1.3;">Cred Theft<br/>svc_backup</div>
+        </div>
+        <div style="text-align:center;padding:0 4px;position:relative;z-index:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#1a0808;border:2px solid #ff1744;margin:11px auto 5px;box-shadow:0 0 6px #ff1744;animation:pulse-red 1.5s infinite;"></div>
+          <div style="font-size:7px;color:#ff1744;margin-bottom:2px;">04:23:09</div>
+          <div style="font-size:7px;color:#4a6a9a;line-height:1.3;">PowerShell<br/>Execution</div>
+        </div>
+        <div style="text-align:center;padding:0 4px;position:relative;z-index:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#1a0808;border:2px solid #ff1744;margin:11px auto 5px;box-shadow:0 0 6px #ff1744;animation:pulse-red 1.5s infinite;"></div>
+          <div style="font-size:7px;color:#ff1744;margin-bottom:2px;">04:23:11</div>
+          <div style="font-size:7px;color:#4a6a9a;line-height:1.3;">Priv Escal.<br/>Admin Acct</div>
+        </div>
+        <div style="text-align:center;padding:0 4px;position:relative;z-index:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#2a1000;border:1px solid #ff7043;margin:11px auto 5px;"></div>
+          <div style="font-size:7px;color:#ff7043;margin-bottom:2px;">04:23:14</div>
+          <div style="font-size:7px;color:#4a6a9a;line-height:1.3;">Lateral Move<br/>FS01 → DC01</div>
+        </div>
+        <div style="text-align:center;padding:0 4px;position:relative;z-index:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#0a0020;border:1px solid #ba68c8;margin:11px auto 5px;"></div>
+          <div style="font-size:7px;color:#ba68c8;margin-bottom:2px;">Ongoing</div>
+          <div style="font-size:7px;color:#4a6a9a;line-height:1.3;">C2 Beacon<br/>Detected</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function updateClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const str = `${now.getUTCFullYear()}-${pad(now.getUTCMonth()+1)}-${pad(now.getUTCDate())} · ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())} UTC`;
+  const el = document.getElementById('clock');
+  if (el) el.textContent = str;
+}
+updateClock();
+setInterval(updateClock, 1000);
+</script>
