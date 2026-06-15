@@ -1,36 +1,94 @@
-# 🛡️ SOC Copilot — AI-Powered Security Log Investigation Agent
+# 🛡️ SOC Copilot — AI-Powered Security Operations Center (SOC) Platform
 
-> 
+> **Detect threats. Investigate security events. Map attacker behavior. Generate actionable intelligence. Forward enriched findings to Splunk.**
 
-A beginner-friendly web application that acts as an AI Security Operations Center (SOC) analyst. Upload Windows Security Event Logs, and SOC Copilot uses Claude AI to explain what happened, assess threats, map to MITRE ATT&CK, and recommend investigation steps — all in plain English.
+SOC Copilot is an AI-powered cybersecurity platform that transforms raw Windows Security Event Logs into actionable security intelligence. Built for SOC analysts, cybersecurity learners, and security teams, the platform combines threat detection, MITRE ATT&CK mapping, AI-assisted investigations, automated threat hunting, and Splunk integration within a unified SOC-style dashboard.
+
+Upload Windows Security Event Logs and instantly receive enriched event analysis, severity scoring, attack technique mapping, threat-hunting results, investigation guidance, remediation recommendations, and executive-ready security reports.
 
 ---
 
-## 🎯 Project Overview
+## 🎯 Why SOC Copilot?
 
-Security logs are complex and cryptic. Beginner SOC analysts often spend hours trying to understand what a Windows Event ID means and whether it's a real threat.
+Security analysts often face thousands of security events daily. Understanding whether an event represents normal activity or a potential attack requires significant time and expertise.
 
-**SOC Copilot bridges that gap** by combining:
-- **Rule-based severity scoring** — Fast, deterministic analysis of event types
-- **AI reasoning (Claude API)** — Human-readable explanations and multi-step investigation guidance
-- **MITRE ATT&CK mapping** — Connect events to the global adversary behavior framework
-- **Threat Hunt engine** — Automated pattern detection for brute force, privilege escalation, and more
+SOC Copilot accelerates investigations by automatically:
+
+* 🎯 Prioritizing suspicious events using severity scoring
+* 🤖 Explaining security events in plain English
+* 🗺️ Mapping attacker behavior to MITRE ATT&CK
+* 🔍 Detecting attack patterns across multiple events
+* 📄 Generating investigation and remediation guidance
+* 🔗 Sending enriched findings to Splunk for monitoring and correlation
 
 ---
 
 ## ✨ Features
 
-| Feature | Description |
-|---|---|
-| 📤 Log Upload | Upload JSON or CSV Windows Security Event logs |
-| 🤖 AI Analysis | Per-event AI explanations using Claude Sonnet |
-| 🎯 Severity Scoring | Automatic 0–100 scoring with Critical/High/Medium/Low/Informational levels |
-| 🗺️ MITRE ATT&CK | Maps each event to ATT&CK technique ID, name, tactic, and description |
-| 🔍 Threat Hunt | One-click scan for brute force, privilege escalation, and suspicious processes |
-| 📊 Dashboard | Live counters for total, suspicious, and critical events |
-| 📄 Security Report | Full investigation checklist and remediation recommendations |
-| 🖥️ Dark Terminal UI | Professional SOC-themed interface with severity-coded color system |
-| 📱 Responsive | Works on desktop and mobile browsers |
+| Feature                      | Description                                                                                    |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| 📤 Windows Log Analysis      | Upload and analyze Windows Security Event Logs (JSON/CSV)                                      |
+| 🤖 AI-Assisted Investigation | Generate security explanations, threat assessments, and analyst guidance                       |
+| 🎯 Severity Scoring Engine   | Risk-based scoring system with Critical, High, Medium, Low, and Informational classifications  |
+| 🗺️ MITRE ATT&CK Mapping     | Automatically map events to ATT&CK techniques, tactics, and adversary behaviors                |
+| 🔍 Automated Threat Hunting  | Detect brute force attacks, privilege escalation, suspicious accounts, and malicious processes |
+| 📊 SOC Dashboard             | Interactive analyst dashboard with event statistics and severity breakdowns                    |
+| 📄 Investigation Reports     | Generate investigation checklists and remediation recommendations                              |
+| 🔗 Splunk HEC Integration    | Forward enriched security events and threat-hunt findings directly to Splunk                   |
+| 🛡️ Event Enrichment         | Combine severity, MITRE context, AI analysis, and threat intelligence into a unified view      |
+| 🖥️ SOC-Inspired Interface   | Modern dark-themed cybersecurity dashboard designed for analysts                               |
+| 📱 Responsive Design         | Optimized for desktop and mobile devices                                                       |
+
+---
+
+## 🚀 Core Capabilities
+
+### Security Event Analysis
+
+Transform raw Windows Security Events into human-readable security insights.
+
+### Threat Hunting
+
+Identify indicators of compromise including:
+
+* Brute Force Attacks
+* Privilege Escalation
+* Suspicious PowerShell Activity
+* Unauthorized Account Creation
+* Privileged Group Modifications
+
+### MITRE ATT&CK Intelligence
+
+Understand attacker behavior through technique and tactic mapping aligned with the MITRE ATT&CK framework.
+
+### Splunk Integration
+
+Forward enriched events, threat-hunting findings, severity scores, and investigation results to Splunk through HTTP Event Collector (HEC) for centralized monitoring and analysis.
+
+### AI-Powered Investigations
+
+Leverage AI-assisted reasoning to generate:
+
+* Event Summaries
+* Threat Assessments
+* Investigation Steps
+* Analyst Recommendations
+* Remediation Actions
+
+---
+
+## 🏆 Sample Attack Scenario
+
+SOC Copilot can detect and investigate a complete attack chain:
+
+1. Brute Force Login Attempts (Event ID 4625)
+2. Successful Account Compromise (Event ID 4624)
+3. PowerShell Command Execution (Event ID 4688)
+4. Unauthorized Account Creation (Event ID 4720)
+5. Privilege Escalation via Group Membership Changes (Event ID 4728)
+
+The platform correlates these events, maps them to MITRE ATT&CK techniques, generates investigation guidance, and produces a comprehensive security report.
+
 
 ### Supported Windows Event IDs
 | Event ID | Description | MITRE Technique |
@@ -208,24 +266,55 @@ This mirrors real-world attack patterns mapped to the MITRE ATT&CK framework.
 
 ---
 
-## 🚀 Future Improvements
+## 🚀 Future Roadmap
 
-- [ ] **Live SIEM Integration** — Connect to Splunk, Elastic, or Microsoft Sentinel
-- [ ] **Sigma Rule Support** — Parse and apply community detection rules
-- [ ] **Timeline View** — Visualize attack progression chronologically
-- [ ] **Multi-File Analysis** — Cross-correlate events from multiple log sources
-- [ ] **Email Reports** — Export and send PDF investigation reports
-- [ ] **Custom Rules Engine** — Let analysts define their own detection logic
-- [ ] **User Accounts** — Save and compare historical investigations
-- [ ] **Sysmon Support** — Full Sysmon event ID parsing (Event ID 1, 3, 7, etc.)
-- [ ] **Network Log Analysis** — Extend to firewall and proxy logs
+The following enhancements are planned to further expand SOC Copilot's threat detection, investigation, and SOC automation capabilities:
+
+* [ ] **Advanced Splunk Dashboards** — Interactive security dashboards, visualizations, and alerting for enriched SOC Copilot events
+* [ ] **Microsoft Sentinel Integration** — Forward enriched findings to Microsoft Sentinel for cloud-native SOC operations
+* [ ] **Elastic Security Integration** — Support Elastic Stack for centralized security monitoring
+* [ ] **Sigma Rule Engine** — Parse and apply community-driven Sigma detection rules
+* [ ] **Attack Timeline View** — Visualize attacker activity and event progression chronologically
+* [ ] **Multi-Source Correlation** — Correlate Windows logs, Sysmon events, firewall logs, and authentication logs
+* [ ] **PDF & Executive Reports** — Export investigation reports and incident summaries
+* [ ] **Custom Detection Rules** — Allow analysts to create and manage custom detection logic
+* [ ] **User Authentication & Case Management** — Save investigations, track incidents, and manage analyst workflows
+* [ ] **Sysmon Support** — Advanced endpoint visibility using Sysmon Event IDs and telemetry
+* [ ] **Network Security Analysis** — Support firewall, proxy, DNS, and network traffic logs
+* [ ] **Threat Intelligence Integration** — Enrich events with external IOC and threat intelligence feeds
+* [ ] **SOAR Automation** — Automated response actions such as IP blocking, account disabling, and alert escalation
+* [ ] **AI Incident Summarization** — Generate executive-ready incident summaries and response recommendations
 
 ---
 
 ## 📜 License
 
-This project is intended for educational and demonstration purposes.
+This project is intended for educational, research, and demonstration purposes. It showcases cybersecurity concepts including Windows Security Event Log analysis, threat hunting, MITRE ATT&CK mapping, AI-assisted investigations, security event enrichment, and Splunk integration.
+
+Users are responsible for ensuring compliance with applicable security policies, organizational requirements, and third-party service terms when deploying or modifying this project.
 
 ---
 
-*Built with Python, Flask, Bootstrap 5, and optional AI-assisted analysis support. Includes Splunk integration, MITRE ATT&CK mapping, and threat hunting capabilities.*
+### 🛠️ Built With
+
+* Python
+* Flask
+* Bootstrap 5
+* Claude AI (Optional)
+* Splunk HTTP Event Collector (HEC)
+* MITRE ATT&CK Framework
+
+### 🔐 Core Capabilities
+
+* Windows Security Event Log Analysis
+* Threat Hunting & Attack Pattern Detection
+* MITRE ATT&CK Technique Mapping
+* AI-Assisted Security Investigations
+* Severity Scoring & Event Enrichment
+* Security Reporting & Remediation Guidance
+* Splunk Integration for Centralized Monitoring
+
+---
+
+**SOC Copilot demonstrates how AI, threat detection, event enrichment, and SIEM integration can help security analysts investigate threats more efficiently.**
+
