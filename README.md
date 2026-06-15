@@ -23,6 +23,14 @@ SOC Copilot accelerates investigations by automatically:
 
 ---
 
+## 📄 Interactive Dashboard Mockup
+
+Explore the standalone SOC dashboard prototype:
+
+👉 [Open Dashboard Mockup](dashboard/soc_copilot_dashboard.html)
+
+---
+
 ## ✨ Features
 
 | Feature                      | Description                                                                                    |
