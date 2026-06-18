@@ -338,9 +338,6 @@ This mirrors real-world attack patterns mapped to the MITRE ATT&CK framework.
 
 ---
 
-## 🖼️ Screenshots
-
-> 
 
 ## 🖼️ Screenshots
 
