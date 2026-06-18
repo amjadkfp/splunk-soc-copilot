@@ -210,38 +210,116 @@ soc-copilot/
 
 ---
 
-## 🧠 How the AI Reasoning Works
+## 🧠 How SOC Copilot Works
 
-SOC Copilot demonstrates **multi-step AI reasoning** by chaining these steps for every event:
+SOC Copilot transforms raw Windows Security Event Logs into actionable security intelligence through a multi-stage analysis pipeline.
 
+```text
+Windows Security Events
+          │
+          ▼
+    Event Parsing
+          │
+          ▼
+   Severity Scoring
+          │
+          ▼
+ MITRE ATT&CK Mapping
+          │
+          ▼
+ AI-Assisted Investigation
+          │
+          ▼
+     Threat Hunting
+          │
+          ▼
+   Security Reporting
+          │
+          ▼
+  Splunk Integration
 ```
-1. Parse Event
-   └─ Extract Event ID, user, timestamp, IP, process name
 
-2. Severity Engine
-   └─ Calculate 0–100 risk score based on event type + context
-      (e.g., failed login against "administrator" = higher score)
+### 1️⃣ Event Parsing
 
-3. MITRE ATT&CK Mapping
-   └─ Map Event ID → Technique ID, Name, Tactic, Description
+SOC Copilot extracts key security information from uploaded logs, including:
 
-4. Claude AI Prompt
-   └─ Send structured context to Claude Sonnet
-      - Event details
-      - Pre-calculated severity
-      - MITRE context
-   └─ Claude returns JSON with:
-      - summary, security_explanation, threat_assessment
-      - investigation_steps (3 steps)
-      - remediation actions
-      - analyst_tip
+* Event ID
+* Username
+* Source IP Address
+* Timestamp
+* Process Name
+* Computer Name
 
-5. Threat Hunt (on demand)
-   └─ Pattern analysis across ALL events:
-      - Count failed logins per account (brute force)
-      - Detect privilege escalation events
-      - Flag suspicious process names
-```
+### 2️⃣ Severity Scoring Engine
+
+Each event is assigned a risk score between **0–100** based on event type and contextual indicators.
+
+Examples:
+
+| Event                                     | Risk Level  |
+| ----------------------------------------- | ----------- |
+| Successful Login (4624)                   | Low         |
+| Failed Login (4625)                       | Medium–High |
+| New User Account Created (4720)           | High        |
+| Privileged Group Membership Change (4728) | Critical    |
+
+### 3️⃣ MITRE ATT&CK Mapping
+
+SOC Copilot maps Windows Security Events to MITRE ATT&CK techniques and tactics to provide adversary context.
+
+Examples:
+
+| Event ID | Technique                               |
+| -------- | --------------------------------------- |
+| 4625     | T1110 – Brute Force                     |
+| 4624     | T1078 – Valid Accounts                  |
+| 4688     | T1059 – Command & Scripting Interpreter |
+| 4720     | T1136 – Create Account                  |
+| 4728     | T1098 – Account Manipulation            |
+
+### 4️⃣ AI-Assisted Investigation
+
+The analysis engine combines:
+
+* Event Details
+* Severity Score
+* MITRE ATT&CK Context
+* Threat Indicators
+
+to generate:
+
+* Security Event Summary
+* Threat Assessment
+* Investigation Steps
+* Remediation Recommendations
+* Analyst Guidance
+
+### 5️⃣ Threat Hunting Engine
+
+SOC Copilot analyzes events collectively to identify attack patterns and indicators of compromise.
+
+Current detections include:
+
+* Brute Force Activity
+* Privilege Escalation Attempts
+* Suspicious PowerShell Execution
+* Unauthorized Account Creation
+* Privileged Group Modifications
+
+### 6️⃣ Security Reporting
+
+The platform generates investigation-ready reports containing:
+
+* Severity Overview
+* MITRE ATT&CK Coverage
+* Threat Hunting Findings
+* Investigation Checklist
+* Recommended Actions
+
+### 7️⃣ Splunk Integration
+
+Enriched security events, threat assessments, MITRE ATT&CK mappings, and threat-hunting findings are forwarded to Splunk using the HTTP Event Collector (HEC), enabling centralized monitoring, searching, and visualization within a SIEM environment.
+
 
 ---
 
